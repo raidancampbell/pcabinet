@@ -3,31 +3,30 @@ package tui
 import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
-	"net/url"
-	"path"
+	"github.com/raidancampbell/pcabinet/conf"
 )
 
 // ProfileSelector gives a menu for the user to select the profile to capture
 // it does not implement the tea.Model interface, since it's a sub-namingDialog
 type ProfileSelector struct {
-	Options  []profilingOption
-	idx      int
-	chosen   int
-	endpoint *url.URL
+	Options []profilingOption
+	idx     int
+	chosen  int
+	service conf.Service
 
 	parentModel tea.Model
 }
 
 var _ tea.Model = &ProfileSelector{}
 
-func NewProfileSelector(endpoint *url.URL, parentModel tea.Model) tea.Model {
+func NewProfileSelector(service conf.Service, parentModel tea.Model) tea.Model {
 	return &ProfileSelector{
 		Options: []profilingOption{
 			{"CPU profile", "profile"},
 			{"heap profile", "heap"},
 			{"trace", "trace"}},
 		chosen:      -1,
-		endpoint:    endpoint,
+		service:     service,
 		parentModel: parentModel,
 	}
 }
@@ -58,10 +57,9 @@ func (s *ProfileSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s.idx < len(s.Options)-1 {
 				s.idx++
 			}
-		case "enter", " ":
+		case "enter", " ", "right":
 			s.chosen = s.idx
-			profileEndpoint := path.Join(s.endpoint.String(), s.Options[s.idx].endpointSuffix)
-			return NewNamingDialog(profileEndpoint, s), nil
+			return NewNamingDialog(s.service, s.Options[s.idx], s), nil
 		}
 	}
 	return s, nil

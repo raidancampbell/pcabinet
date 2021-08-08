@@ -5,7 +5,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/raidancampbell/pcabinet/conf"
 	"github.com/sirupsen/logrus"
-	"net/url"
 	"sort"
 )
 
@@ -15,20 +14,16 @@ var _ tea.Model = &ServiceSelector{}
 // ServiceSelector gives a menu for the user to select the service to profile
 //TODO add a text input and fuzzy matching
 type ServiceSelector struct {
-	Options     map[string]*url.URL
+	Options     map[string]conf.Service
 	nameIndexes map[int]string
 	idx         int
 	chosen      int
 }
 
 func NewServiceSelector(services map[string]conf.Service) tea.Model {
-	serviceNames := map[string]*url.URL{}
+	serviceNames := map[string]conf.Service{}
 	for name, service := range services {
-		parse, err := url.Parse(service.Endpoint)
-		if err != nil {
-			logrus.WithError(err).Fatalf("unable to parse url %s", service.Endpoint)
-		}
-		serviceNames[name] = parse
+		serviceNames[name] = service
 	}
 
 	return &ServiceSelector{
@@ -88,7 +83,7 @@ func (s *ServiceSelector) View() string {
 		if s.idx == i {
 			cursor = ">"
 		}
-		str += fmt.Sprintf("%s [%s] %s\n", cursor, s.nameIndexes[i], s.Options[s.nameIndexes[i]])
+		str += fmt.Sprintf("%s [%s] %s\n", cursor, s.nameIndexes[i], s.Options[s.nameIndexes[i]].Endpoint)
 	}
 	str += "\nPress q to quit.\n"
 	return str

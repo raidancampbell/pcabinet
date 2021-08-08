@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/raidancampbell/pcabinet/conf"
 )
 
 var _ tea.Model = &namingDialog{}
@@ -11,13 +12,14 @@ type namingDialog struct {
 	textInput textinput.Model
 	err error
 
-	endpoint string
+	service conf.Service
+	profiling profilingOption
 	parentModel tea.Model
 }
 
 type errMsg error
 
-func NewNamingDialog(endpoint string, parent tea.Model) namingDialog {
+func NewNamingDialog(service conf.Service, profiling profilingOption, parent tea.Model) namingDialog {
 	ti := textinput.NewModel()
 	ti.Focus()
 	ti.CharLimit = 156
@@ -26,7 +28,8 @@ func NewNamingDialog(endpoint string, parent tea.Model) namingDialog {
 	return namingDialog{
 		textInput: ti,
 		err:       nil,
-		endpoint: endpoint,
+		service: service,
+		profiling: profiling,
 		parentModel: parent,
 	}
 }
