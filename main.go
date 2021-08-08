@@ -22,9 +22,6 @@ func main() {
 	if err := p.Start(); err != nil {
 		log.Fatal(err)
 	}
-	//TODO: figure out how to chain together bubbles in bubbletea
-	//TODO: after a value is selected, display a download spinner
-	//TODO: HTTP GET that endpoint, write to some file
 }
 
 // defaultWebServer exists so that I can test it on itself. I don't wanna keep another long-running debug service around.

@@ -1,7 +1,7 @@
 services:
-  this:
+  - name: this
     endpoint: http://127.0.0.1:8080/debug/pprof
-  that:
+  - name: that
     endpoint: http://127.0.0.1:8080/debug/pprof
-  something-else:
+  - name: something-else
     endpoint: http://127.0.0.1:8080/debug/pprof

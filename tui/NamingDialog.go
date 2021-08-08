@@ -68,6 +68,6 @@ func (n namingDialog) View() string {
 	return fmt.Sprintf(
 		"Enter a short description to insert into the filename:\n\n%s\n\n%s",
 		n.textInput.View(),
-		"(esc to quit)",
+		"(^C to quit)",
 	) + "\n"
 }
