@@ -3,28 +3,38 @@ package tui
 import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
+	"net/url"
+	"path"
 )
 
 // ProfileSelector gives a menu for the user to select the profile to capture
-// it does not implement the tea.Model interface, since it's a sub-model
+// it does not implement the tea.Model interface, since it's a sub-namingDialog
 type ProfileSelector struct {
-	Options  []string
+	Options  []profilingOption
 	idx      int
 	chosen   int
-	endpoint string
+	endpoint *url.URL
 
 	parentModel tea.Model
 }
 
 var _ tea.Model = &ProfileSelector{}
 
-func NewProfileSelector(endpoint string, parentModel tea.Model) tea.Model {
+func NewProfileSelector(endpoint *url.URL, parentModel tea.Model) tea.Model {
 	return &ProfileSelector{
-		Options:  []string{"CPU profile", "heap profile", "trace"},
-		chosen:   -1,
-		endpoint: endpoint,
+		Options: []profilingOption{
+			{"CPU profile", "profile"},
+			{"heap profile", "heap"},
+			{"trace", "trace"}},
+		chosen:      -1,
+		endpoint:    endpoint,
 		parentModel: parentModel,
 	}
+}
+
+type profilingOption struct {
+	name           string
+	endpointSuffix string
 }
 
 func (s *ProfileSelector) Init() tea.Cmd {
@@ -50,7 +60,8 @@ func (s *ProfileSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter", " ":
 			s.chosen = s.idx
-			panic(s.Options[s.idx])
+			profileEndpoint := path.Join(s.endpoint.String(), s.Options[s.idx].endpointSuffix)
+			return NewNamingDialog(profileEndpoint, s), nil
 		}
 	}
 	return s, nil
@@ -63,7 +74,7 @@ func (s *ProfileSelector) View() string {
 		if s.idx == i {
 			cursor = ">"
 		}
-		str += fmt.Sprintf("%s %s\n", cursor, s.Options[i])
+		str += fmt.Sprintf("%s %s\n", cursor, s.Options[i].name)
 	}
 	str += "\nPress q or left arrow to go back.\n"
 	return str

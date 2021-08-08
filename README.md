@@ -6,7 +6,7 @@ A tool for capturing and organizing golang profiles
  - [ ] verify it ends in `/debug/pprof`
  - [X] implement TUI to choose hardcoded URL
  - [X] get user input for a desired profile type
- - [ ] get user input for a description
+ - [X] get user input for a description
  - [ ] invoke with `?debug=0`
  - [ ] display TUI spinner
  - [ ] design naming scheme and write to file
