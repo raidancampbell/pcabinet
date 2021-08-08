@@ -4,12 +4,14 @@ import (
 	"log"
 )
 import "github.com/spf13/viper"
+
 const configFilename = "config.yml"
 
 type Conf struct {
-	Services map[string]Service
+	Services []Service
 }
 type Service struct {
+	Name     string
 	Endpoint string
 }
 
