@@ -46,9 +46,10 @@ func NewDownloadSpinner(service conf.Service, profiling profilingOption, descrip
 	}
 }
 
+// doDownload does the actual download of the desired profile and stores it into a file.
+// The rest of this repository is scaffolding for this function.
 func doDownload(service conf.Service, profiling profilingOption, description string, complete chan error) {
-	filename := fmt.Sprintf("%s.%s.%s.%s", service.Name, time.Now().Format("2006-01-02T15-04-05"), description, profiling.endpointSuffix)
-	filename = strings.ReplaceAll(filename, " ", "-")
+	// create the directory for this capture.  if it didn't exist and we fail later, we'll delete it to clean up
 	err := os.Mkdir(service.Name, 0755)
 	dirExists := errors.Is(err, os.ErrExist)
 	if err != nil && !dirExists {
@@ -56,50 +57,65 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 		complete <- err
 		return
 	}
-	out, err := os.Create(path.Join(service.Name, filename))
+
+	// create the file.  If we fail later, we'll delete it to clean up
+	filename := fmt.Sprintf("%s.%s.%s.%s", service.Name, time.Now().Format("2006-01-02T15-04-05"), description, profiling.endpointSuffix)
+	filename = path.Join(service.Name, strings.ReplaceAll(filename, " ", "-"))
+	out, err := os.Create(filename)
 	if err != nil {
 		logrus.WithError(err).WithField("filename", filename).Error("unable to create file")
+		os.Remove(filename)
 		if !dirExists {
 			os.Remove(service.Name)
 		}
-		os.Remove(path.Join(service.Name, filename))
 		complete <- err
 		return
 	}
 	defer out.Close()
+
+	// parse the input URL.  TODO: parse this at yaml unmarshaling time and propagate it through as a `url.URL`. no reason to error here.
 	u, err := url2.Parse(service.Endpoint)
 	if err != nil {
 		logrus.WithError(err).WithField("endpoint", service.Endpoint).Error("unable to parse endpoint as URL")
+		os.Remove(filename)
 		if !dirExists {
 			os.Remove(service.Name)
 		}
-		os.Remove(path.Join(service.Name, filename))
 		complete <- err
 		return
 	}
+
+	// add the profile suffix to the URL, e.g. append `/trace` if the user wanted to capture a trace
+	// and invoke
 	u.Path = path.Join(u.Path, profiling.endpointSuffix)
 	url := u.String()
 	resp, err := http.Get(url)
 	if err != nil {
 		logrus.WithError(err).WithField("url", url).Error("Failed to get profile")
+		os.Remove(filename)
 		if !dirExists {
 			os.Remove(service.Name)
 		}
-		os.Remove(path.Join(service.Name, filename))
 		complete <- err
 		return
 	}
 	defer resp.Body.Close()
+
+	// if we got a non-200 it's probably due to an existing profile running, or the server is too overloaded to service
 	if resp.StatusCode != 200 {
 		logrus.WithError(err).WithField("url", url).WithField("status_code", resp.StatusCode).Warn("non-200 returned")
 	}
+
+	// write the HTTP response to the file.  This should be the binary data of the profile, unless the above warning was hit.
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		logrus.WithError(err).WithField("url", url).Error("Failed to write response to file")
 		complete <- err
 		return
 	}
-	logrus.Infof("successfully wrote data to file '%v'", path.Join(service.Name, filename))
+
+	// log the output.  the logger is buffered because bubbletea hijacks the term.  The buffer will be dumped to stdout after bubbletea is done
+	logrus.Infof("successfully wrote data to file '%v'", filename)
 	close(complete)
 }
 
