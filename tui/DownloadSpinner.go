@@ -50,7 +50,8 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 	filename := fmt.Sprintf("%s.%s.%s.%s", service.Name, time.Now().Format("2006-01-02T15-04-05"), description, profiling.endpointSuffix)
 	filename = strings.ReplaceAll(filename, " ", "-")
 	err := os.Mkdir(service.Name, 0755)
-	if err != nil && !errors.Is(err, os.ErrExist) {
+	dirExists := errors.Is(err, os.ErrExist)
+	if err != nil && !dirExists {
 		logrus.WithError(err).WithField("directory", service.Name).Error("unable to create directory for file")
 		complete <- err
 		return
@@ -58,6 +59,10 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 	out, err := os.Create(path.Join(service.Name, filename))
 	if err != nil {
 		logrus.WithError(err).WithField("filename", filename).Error("unable to create file")
+		if !dirExists {
+			os.Remove(service.Name)
+		}
+		os.Remove(path.Join(service.Name, filename))
 		complete <- err
 		return
 	}
@@ -65,6 +70,10 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 	u, err := url2.Parse(service.Endpoint)
 	if err != nil {
 		logrus.WithError(err).WithField("endpoint", service.Endpoint).Error("unable to parse endpoint as URL")
+		if !dirExists {
+			os.Remove(service.Name)
+		}
+		os.Remove(path.Join(service.Name, filename))
 		complete <- err
 		return
 	}
@@ -73,6 +82,10 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 	resp, err := http.Get(url)
 	if err != nil {
 		logrus.WithError(err).WithField("url", url).Error("Failed to get profile")
+		if !dirExists {
+			os.Remove(service.Name)
+		}
+		os.Remove(path.Join(service.Name, filename))
 		complete <- err
 		return
 	}
@@ -86,7 +99,7 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 		complete <- err
 		return
 	}
-	logrus.Infof("successfully write data to file '%v'", path.Join(service.Name, filename))
+	logrus.Infof("successfully wrote data to file '%v'", path.Join(service.Name, filename))
 	close(complete)
 }
 

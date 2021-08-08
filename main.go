@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/raidancampbell/pcabinet/conf"
 	"github.com/raidancampbell/pcabinet/tui"
 	"github.com/sirupsen/logrus"
@@ -13,6 +15,8 @@ import (
 
 func main() {
 	cfg := conf.Initialize()
+	buf := bytes.Buffer{}
+	logrus.SetOutput(&buf)
 
 	go defaultWebServer()
 
@@ -22,6 +26,7 @@ func main() {
 	if err := p.Start(); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Print(buf.String())
 }
 
 // defaultWebServer exists so that I can test it on itself. I don't wanna keep another long-running debug service around.
