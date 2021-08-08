@@ -1,0 +1,7 @@
+services:
+  this:
+    endpoint: 127.0.0.1:8080/debug/pprof
+  that:
+    endpoint: 127.0.0.1:8080/debug/pprof
+  something-else:
+    endpoint: 127.0.0.1:8080/debug/pprof
