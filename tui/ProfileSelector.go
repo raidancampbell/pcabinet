@@ -6,10 +6,10 @@ import (
 	"github.com/raidancampbell/pcabinet/conf"
 )
 
-// ProfileSelector gives a menu for the user to select the profile to capture
+// profileSelector gives a menu for the user to select the profile to capture
 // it does not implement the tea.Model interface, since it's a sub-namingDialog
-type ProfileSelector struct {
-	Options []profilingOption
+type profileSelector struct {
+	options []profilingOption
 	idx     int
 	chosen  int
 	service conf.Service
@@ -17,14 +17,20 @@ type ProfileSelector struct {
 	parentModel tea.Model
 }
 
-var _ tea.Model = &ProfileSelector{}
+var profiles = []profilingOption{
+	{"CPU profile", "profile"},
+	{"heap profile", "heap"},
+	{"goroutine profile", "goroutine"},
+	{"block profile", "block"},
+	{"mutex profile", "mutex"},
+	{"trace", "trace"},
+}
+
+var _ tea.Model = &profileSelector{}
 
 func NewProfileSelector(service conf.Service, parentModel tea.Model) tea.Model {
-	return &ProfileSelector{
-		Options: []profilingOption{
-			{"CPU profile", "profile"},
-			{"heap profile", "heap"},
-			{"trace", "trace"}},
+	return &profileSelector{
+		options:     profiles,
 		chosen:      -1,
 		service:     service,
 		parentModel: parentModel,
@@ -36,11 +42,11 @@ type profilingOption struct {
 	endpointSuffix string
 }
 
-func (s *ProfileSelector) Init() tea.Cmd {
+func (s *profileSelector) Init() tea.Cmd {
 	return nil
 }
 
-func (s *ProfileSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (s *profileSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
@@ -54,25 +60,25 @@ func (s *ProfileSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s.idx--
 			}
 		case "down", "j":
-			if s.idx < len(s.Options)-1 {
+			if s.idx < len(s.options)-1 {
 				s.idx++
 			}
 		case "enter", " ", "right":
 			s.chosen = s.idx
-			return NewNamingDialog(s.service, s.Options[s.idx], s), nil
+			return NewNamingDialog(s.service, s.options[s.idx], s), nil
 		}
 	}
 	return s, nil
 }
 
-func (s *ProfileSelector) View() string {
+func (s *profileSelector) View() string {
 	str := "Which profile would you like to capture?\n\n"
-	for i := 0; i < len(s.Options); i++ {
+	for i := 0; i < len(s.options); i++ {
 		cursor := " "
 		if s.idx == i {
 			cursor = ">"
 		}
-		str += fmt.Sprintf("%s %s\n", cursor, s.Options[i].name)
+		str += fmt.Sprintf("%s %s\n", cursor, s.options[i].name)
 	}
 	str += "\nPress q or left arrow to go back.\n"
 	return str
