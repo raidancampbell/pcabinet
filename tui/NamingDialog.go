@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/raidancampbell/pcabinet/conf"
@@ -50,9 +51,7 @@ func (n namingDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEsc:
 			return n.parentModel, nil
 		case tea.KeyEnter:
-			//TODO:
-			// add a downloader next
-			panic("f")
+			return NewDownloadSpinner(n.service, n.profiling, n.textInput.Value(), n), spinner.Tick
 		}
 
 	// We handle errors just like any other message

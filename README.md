@@ -8,7 +8,7 @@ A tool for capturing and organizing golang profiles
  - [X] get user input for a desired profile type
  - [X] get user input for a description
  - [ ] invoke with `?debug=0`
- - [ ] display TUI spinner
+ - [X] display TUI spinner
  - [ ] design naming scheme and write to file
 
 # Extra features
