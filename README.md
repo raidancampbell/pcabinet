@@ -1,19 +1,17 @@
 # pcabinet
 A tool for capturing and organizing golang profiles
 
-# TODO
- - [X] read in yaml of hardcoded URLs
- - [ ] verify it ends in `/debug/pprof`
- - [X] implement TUI to choose hardcoded URL
- - [X] get user input for a desired profile type
- - [X] get user input for a description
- - [X] invoke
- - [X] display TUI spinner
- - [X] design naming scheme and write to file
+## Usage
+1. Edit `config.yml` to contain the base `debug/pprof` URLs for your desired services (samples included)
+2. `go run .` to start up the interface
+3. select your service from the presented list
+4. select the profile you'd like to capture from the presented list
+5. (optional) give a description of what's different with this profile
+6. your profile is captured and stored into the `$NAME/$NAME.$DATE.$DESC.$TYPE` file
 
-# Extra features
- - [ ] For CPU profiles take a 1 second profile first, open it, and verify CPU usage is over 10%
- - [ ] support variants of an entity (e.g. a dev vs prod instance)
+### Extra features (TODO)
  - [X] intelligently parse URL to ignore URL parameters specified by the user
- - [ ] display estimated time to completion when capturing a profile
+ - [ ] check `XDG_CONFIG_HOME/pcabinet` for a config, and add output paths to config for global usage via `go install`
  - [ ] allow multiple types to be captured in sequence with one request
+ - [ ] For CPU profiles take a 1 second profile first, open it, and verify CPU usage is over 10%
+ - [ ] display estimated time to completion when capturing a profile

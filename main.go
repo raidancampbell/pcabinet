@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -18,7 +19,10 @@ func main() {
 	buf := bytes.Buffer{}
 	logrus.SetOutput(&buf)
 
-	go defaultWebServer()
+	// no need to open HTTP listen ports by default. this is only useful for debugging pcabinet itself.
+	if os.Getenv("PCABINET_DEBUG") == "yes" {
+		go defaultWebServer()
+	}
 
 	model := tui.NewServiceSelector(cfg.Services)
 
