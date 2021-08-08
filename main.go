@@ -16,12 +16,9 @@ func main() {
 
 	go defaultWebServer()
 
-	//TODO: ServiceSelector should operate on services
-	serviceNames := map[string]string{}
-	for name, service := range cfg.Services {
-		serviceNames[name] = service.Endpoint
-	}
-	p := tea.NewProgram(&tui.ServiceSelector{Options: serviceNames})
+	model := tui.NewServiceSelector(cfg.Services)
+
+	p := tea.NewProgram(model)
 	if err := p.Start(); err != nil {
 		log.Fatal(err)
 	}

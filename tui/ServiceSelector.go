@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/raidancampbell/pcabinet/conf"
 	"github.com/sirupsen/logrus"
 	"sort"
 )
@@ -19,14 +20,24 @@ type ServiceSelector struct {
 	chosen      int
 }
 
+func NewServiceSelector(services map[string]conf.Service) tea.Model {
+	serviceNames := map[string]string{}
+	for name, service := range services {
+		serviceNames[name] = service.Endpoint
+	}
+
+	return &ServiceSelector{
+		Options:     serviceNames,
+		nameIndexes: map[int]string{},
+		chosen: -1,
+	}
+}
+
 func (s *ServiceSelector) Init() tea.Cmd {
 	if len(s.Options) == 0 {
 		logrus.Error("no options to select")
 		tea.Quit()
 	}
-	// initialize data
-	s.nameIndexes = map[int]string{}
-	s.chosen = -1
 
 	// maps are unsorted. this builds the index for sorted names of the options
 	strs := make([]string, len(s.Options))
@@ -57,9 +68,9 @@ func (s *ServiceSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s.idx < len(s.Options)-1 {
 				s.idx++
 			}
-		case "enter", " ":
+		case "enter", " ", "right":
 			s.chosen = s.idx
-			panic(s.Options[s.nameIndexes[s.idx]])
+			return NewProfileSelector(s.Options[s.nameIndexes[s.idx]], s), nil
 		}
 	}
 	return s, nil
