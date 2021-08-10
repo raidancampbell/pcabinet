@@ -5,7 +5,7 @@ import (
 )
 import "github.com/spf13/viper"
 
-const configFilename = "config.yml"
+const configFilename = "pcabinet_config.yml"
 
 type Conf struct {
 	Services []Service
@@ -18,7 +18,9 @@ type Service struct {
 func Initialize() *Conf {
 	var c Conf
 	viper.SetConfigType("yaml")
-	viper.SetConfigFile(configFilename)
+	viper.SetConfigName(configFilename)
+	viper.AddConfigPath("$HOME/.config/pcabinet/")
+	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	err = viper.Unmarshal(&c)
 	if err != nil {
