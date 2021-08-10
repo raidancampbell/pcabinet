@@ -1,3 +1,4 @@
+output_basedir: "$HOME/.local/share/pcabinet"
 services:
   - name: this
     endpoint: http://127.0.0.1:8080/debug/pprof

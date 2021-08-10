@@ -50,23 +50,24 @@ func NewDownloadSpinner(service conf.Service, profiling profilingOption, descrip
 // The rest of this repository is scaffolding for this function.
 func doDownload(service conf.Service, profiling profilingOption, description string, complete chan error) {
 	// create the directory for this capture.  if it didn't exist and we fail later, we'll delete it to clean up
-	err := os.Mkdir(service.Name, 0755)
+	dirName := path.Join(conf.OutputBasedir, service.Name)
+	err := os.Mkdir(dirName, 0755)
 	dirExists := errors.Is(err, os.ErrExist)
 	if err != nil && !dirExists {
-		logrus.WithError(err).WithField("directory", service.Name).Error("unable to create directory for file")
+		logrus.WithError(err).WithField("directory", dirName).Error("unable to create directory for file")
 		complete <- err
 		return
 	}
 
 	// create the file.  If we fail later, we'll delete it to clean up
 	filename := fmt.Sprintf("%s.%s.%s.%s", service.Name, time.Now().Format("2006-01-02T15-04-05"), description, profiling.endpointSuffix)
-	filename = path.Join(service.Name, strings.ReplaceAll(filename, " ", "-"))
+	filename = path.Join(dirName, strings.ReplaceAll(filename, " ", "-"))
 	out, err := os.Create(filename)
 	if err != nil {
 		logrus.WithError(err).WithField("filename", filename).Error("unable to create file")
 		os.Remove(filename)
 		if !dirExists {
-			os.Remove(service.Name)
+			os.Remove(dirName)
 		}
 		complete <- err
 		return
@@ -79,7 +80,7 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 		logrus.WithError(err).WithField("endpoint", service.Endpoint).Error("unable to parse endpoint as URL")
 		os.Remove(filename)
 		if !dirExists {
-			os.Remove(service.Name)
+			os.Remove(dirName)
 		}
 		complete <- err
 		return
@@ -94,7 +95,7 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 		logrus.WithError(err).WithField("url", url).Error("Failed to get profile")
 		os.Remove(filename)
 		if !dirExists {
-			os.Remove(service.Name)
+			os.Remove(dirName)
 		}
 		complete <- err
 		return
