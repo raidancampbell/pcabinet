@@ -116,7 +116,7 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 	}
 
 	// log the output.  the logger is buffered because bubbletea hijacks the term.  The buffer will be dumped to stdout after bubbletea is done
-	logrus.Infof("successfully wrote data to file '%v'", filename)
+	logrus.Infof("successfully wrote data to file %v", filename)
 	close(complete)
 }
 
