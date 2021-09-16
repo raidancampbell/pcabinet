@@ -24,6 +24,7 @@ type downloadSpinner struct {
 	spinner          spinner.Model
 	err              error
 	downloadComplete chan error
+	estCompletion    time.Time
 
 	description string
 	service     conf.Service
@@ -42,10 +43,26 @@ func NewDownloadSpinner(service conf.Service, profiling []profilingOption, descr
 		close(downloadComplete)
 	}()
 
+	estCompletionTime := time.Now()
+	for _, profile := range profiling {
+		switch profile.endpointSuffix {
+		case "profile":
+			if conf.C.TestCPU {
+				estCompletionTime = estCompletionTime.Add(31 * time.Second)
+			} else {
+				estCompletionTime = estCompletionTime.Add(30 * time.Second)
+			}
+		case "trace":
+			estCompletionTime = estCompletionTime.Add(1 * time.Second)
+		default:
+		}
+	}
+
 	return &downloadSpinner{
 		spinner:          sp,
 		err:              nil,
 		downloadComplete: downloadComplete,
+		estCompletion:    estCompletionTime,
 		description:      description,
 		service:          service,
 		profiling:        profiling,
@@ -202,8 +219,10 @@ func (d *downloadSpinner) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// this is a massive abuse of the system: I'm treating the spinner spin messages as a non-blocking poll whether the download is complete
 	// TODO: figure out how to inject commands into the framework outside of the update method
 	select {
-	case <-d.downloadComplete:
-		return d, tea.Quit
+	case _, ok := <-d.downloadComplete:
+		if !ok {
+			return d, tea.Quit
+		}
 	default:
 	}
 
@@ -212,5 +231,5 @@ func (d *downloadSpinner) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (d *downloadSpinner) View() string {
-	return fmt.Sprintf("%s Capturing (^C to quit)...\n", d.spinner.View())
+	return fmt.Sprintf("%s Capturing (^C to quit)...\nestimated time remaining: %s", d.spinner.View(), time.Until(d.estCompletion).String())
 }
