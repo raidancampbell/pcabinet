@@ -14,13 +14,13 @@ type namingDialog struct {
 	err error
 
 	service conf.Service
-	profiling profilingOption
+	profiling []profilingOption
 	parentModel tea.Model
 }
 
 type errMsg error
 
-func NewNamingDialog(service conf.Service, profiling profilingOption, parent tea.Model) namingDialog {
+func NewNamingDialog(service conf.Service, profiling []profilingOption, parent tea.Model) tea.Model {
 	ti := textinput.NewModel()
 	ti.Focus()
 	ti.CharLimit = 156

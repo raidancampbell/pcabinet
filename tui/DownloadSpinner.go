@@ -27,15 +27,20 @@ type downloadSpinner struct {
 
 	description string
 	service     conf.Service
-	profiling   profilingOption
+	profiling   []profilingOption
 	parentModel tea.Model
 }
 
-func NewDownloadSpinner(service conf.Service, profiling profilingOption, description string, parent tea.Model) tea.Model {
+func NewDownloadSpinner(service conf.Service, profiling []profilingOption, description string, parent tea.Model) tea.Model {
 	sp := spinner.NewModel()
 
 	downloadComplete := make(chan error)
-	go doDownload(service, profiling, description, downloadComplete)
+	go func() {
+		for _, profile := range profiling {
+			doDownload(service, profile, description, downloadComplete)
+		}
+		close(downloadComplete)
+	}()
 
 	return &downloadSpinner{
 		spinner:          sp,
@@ -140,7 +145,6 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 
 	// log the output.  the logger is buffered because bubbletea hijacks the term.  The buffer will be dumped to stdout after bubbletea is done
 	logrus.Infof("successfully wrote data to file %v", filename)
-	close(complete)
 }
 
 // currentCPUUsage takes a 1-second CPU profile and analyzes it to return the current usage as a percentage-float

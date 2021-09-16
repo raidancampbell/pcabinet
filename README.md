@@ -13,6 +13,6 @@ A tool for capturing and organizing golang profiles
 ### Extra features (TODO)
  - [X] intelligently parse URL to ignore URL parameters specified by the user
  - [X] check `XDG_CONFIG_HOME/pcabinet` for a config, and add output paths to config for global usage via `go install`
- - [ ] allow multiple types to be captured in sequence with one request
+ - [X] allow multiple types to be captured in sequence with one request
  - [X] For CPU profiles take a 1 second profile first, open it, and verify CPU usage is over 5%
  - [ ] display estimated time to completion when capturing a profile

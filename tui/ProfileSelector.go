@@ -11,7 +11,7 @@ import (
 type profileSelector struct {
 	options []profilingOption
 	idx     int
-	chosen  int
+	chosen  []int
 	service conf.Service
 
 	parentModel tea.Model
@@ -31,7 +31,7 @@ var _ tea.Model = &profileSelector{}
 func NewProfileSelector(service conf.Service, parentModel tea.Model) tea.Model {
 	return &profileSelector{
 		options:     profiles,
-		chosen:      -1,
+		chosen:      []int{},
 		service:     service,
 		parentModel: parentModel,
 	}
@@ -56,16 +56,30 @@ func (s *profileSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "left":
 			return s.parentModel, nil
 		case "up", "k":
-			if s.idx % len(s.options) == 0 {
+			if s.idx%len(s.options) == 0 {
 				s.idx = len(s.options) - 1
 			} else {
 				s.idx--
 			}
 		case "down", "j":
 			s.idx++
-		case "enter", " ", "right":
-			s.chosen = s.idx
-			return NewNamingDialog(s.service, s.options[s.idx % len(s.options)], s), nil
+		case " ":
+			removed := false
+			for i, chosen := range s.chosen {
+				if chosen == s.idx%len(s.options) {
+					removed = true
+					s.chosen = append(s.chosen[:i], s.chosen[i+1:]...)
+				}
+			}
+			if !removed {
+				s.chosen = append(s.chosen, s.idx%len(s.options))
+			}
+		case "enter", "right":
+			opts := []profilingOption{}
+			for _, i := range s.chosen {
+				opts = append(opts, s.options[i])
+			}
+			return NewNamingDialog(s.service, opts, s), nil
 		}
 	}
 	return s, nil
@@ -75,11 +89,17 @@ func (s *profileSelector) View() string {
 	str := "Which profile would you like to capture?\n\n"
 	for i := 0; i < len(s.options); i++ {
 		cursor := " "
-		if s.idx % len(s.options) == i {
+		if s.idx%len(s.options) == i {
 			cursor = ">"
 		}
-		str += fmt.Sprintf("%s %s\n", cursor, s.options[i].name)
+		isSelected := " "
+		for _, chosen := range s.chosen {
+			if chosen == i {
+				isSelected = "X"
+			}
+		}
+		str += fmt.Sprintf("%s [%s] %s\n", cursor, isSelected, s.options[i].name)
 	}
-	str += "\nPress q or left arrow to go back.\n"
+	str += "\nPress q or left arrow to go back, space to select, right arrow or enter to continue\n"
 	return str
 }
