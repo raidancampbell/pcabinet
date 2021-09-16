@@ -50,7 +50,7 @@ func NewDownloadSpinner(service conf.Service, profiling profilingOption, descrip
 // The rest of this repository is scaffolding for this function.
 func doDownload(service conf.Service, profiling profilingOption, description string, complete chan error) {
 	// create the directory for this capture.  if it didn't exist and we fail later, we'll delete it to clean up
-	dirName := path.Join(conf.OutputBasedir, service.Name)
+	dirName := path.Join(conf.C.OutputBasedir, service.Name)
 	err := os.Mkdir(dirName, 0755)
 	dirExists := errors.Is(err, os.ErrExist)
 	if err != nil && !dirExists {

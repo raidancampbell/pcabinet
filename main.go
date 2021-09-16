@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	cfg := conf.Initialize()
+	conf.Initialize()
 	buf := bytes.Buffer{}
 	logrus.SetOutput(&buf)
 
@@ -24,7 +24,7 @@ func main() {
 		go defaultWebServer()
 	}
 
-	model := tui.NewServiceSelector(cfg.Services)
+	model := tui.NewServiceSelector(conf.C.Services)
 
 	p := tea.NewProgram(model)
 	if err := p.Start(); err != nil {
