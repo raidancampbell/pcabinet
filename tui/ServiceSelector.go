@@ -48,7 +48,6 @@ func (s *ServiceSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "down", "j":
 			s.idx++
 		case "enter", " ", "right":
-
 			return NewProfileSelector(s.Options[s.idx % len(s.Options)], s), nil
 		}
 	}

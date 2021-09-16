@@ -6,12 +6,14 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/raidancampbell/pcabinet/conf"
+	"github.com/raidancampbell/pcabinet/internal"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	url2 "net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -19,8 +21,8 @@ import (
 var _ tea.Model = &downloadSpinner{}
 
 type downloadSpinner struct {
-	spinner spinner.Model
-	err     error
+	spinner          spinner.Model
+	err              error
 	downloadComplete chan error
 
 	description string
@@ -36,13 +38,13 @@ func NewDownloadSpinner(service conf.Service, profiling profilingOption, descrip
 	go doDownload(service, profiling, description, downloadComplete)
 
 	return &downloadSpinner{
-		spinner:     sp,
-		err:         nil,
+		spinner:          sp,
+		err:              nil,
 		downloadComplete: downloadComplete,
-		description: description,
-		service:     service,
-		profiling:   profiling,
-		parentModel: parent,
+		description:      description,
+		service:          service,
+		profiling:        profiling,
+		parentModel:      parent,
 	}
 }
 
@@ -57,6 +59,27 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 		logrus.WithError(err).WithField("directory", dirName).Error("unable to create directory for file")
 		complete <- err
 		return
+	}
+
+	if profiling.endpointSuffix == "profile" && conf.C.TestCPU {
+		usage, err := currentCPUUsage(service, profiling)
+		if err != nil {
+			logrus.WithError(err).Error("unable to test CPU usage for threshold")
+			if !dirExists {
+				os.Remove(dirName)
+			}
+			complete <- err
+			return
+		}
+		if usage < 0.05 {
+			err := fmt.Errorf("measured CPU usage of %s is less than threshold of 0.05", strconv.FormatFloat(usage, 'f', 3, 64))
+			logrus.Errorf(err.Error())
+			if !dirExists {
+				os.Remove(dirName)
+			}
+			complete <- err
+			return
+		}
 	}
 
 	// create the file.  If we fail later, we'll delete it to clean up
@@ -120,6 +143,37 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 	close(complete)
 }
 
+// currentCPUUsage takes a 1-second CPU profile and analyzes it to return the current usage as a percentage-float
+func currentCPUUsage(service conf.Service, profiling profilingOption) (float64, error) {
+	u, err := url2.Parse(service.Endpoint)
+	if err != nil {
+		logrus.WithError(err).WithField("endpoint", service.Endpoint).Error("unable to parse endpoint as URL")
+		return 0, err
+	}
+	q := u.Query()
+	q.Set("seconds", "1")
+	u.RawQuery = q.Encode()
+	u.Path = path.Join(u.Path, profiling.endpointSuffix)
+	url := u.String()
+	resp, err := http.Get(url)
+	if err != nil {
+		logrus.WithError(err).WithField("url", url).Error("Failed to get profile")
+		return 0, err
+	}
+	b, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		logrus.WithError(err).WithField("url", url).Error("Failed to read profile response")
+		return 0, err
+	}
+
+	usage, err := internal.CPUUsage(b)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to parse profile response")
+		return 0, err
+	}
+	return usage, nil
+}
 
 func (d *downloadSpinner) Init() tea.Cmd {
 	return nil
@@ -144,7 +198,7 @@ func (d *downloadSpinner) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// this is a massive abuse of the system: I'm treating the spinner spin messages as a non-blocking poll whether the download is complete
 	// TODO: figure out how to inject commands into the framework outside of the update method
 	select {
-	case <- d.downloadComplete:
+	case <-d.downloadComplete:
 		return d, tea.Quit
 	default:
 	}
