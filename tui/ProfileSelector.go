@@ -79,6 +79,9 @@ func (s *profileSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			for _, i := range s.chosen {
 				opts = append(opts, s.options[i])
 			}
+			if len(opts) == 0 {
+				opts = append(opts, s.options[s.idx%len(s.options)])
+			}
 			return NewNamingDialog(s.service, opts, s), nil
 		}
 	}
