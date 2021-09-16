@@ -56,16 +56,16 @@ func (s *profileSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "left":
 			return s.parentModel, nil
 		case "up", "k":
-			if s.idx > 0 {
+			if s.idx % len(s.options) == 0 {
+				s.idx = len(s.options) - 1
+			} else {
 				s.idx--
 			}
 		case "down", "j":
-			if s.idx < len(s.options)-1 {
-				s.idx++
-			}
+			s.idx++
 		case "enter", " ", "right":
 			s.chosen = s.idx
-			return NewNamingDialog(s.service, s.options[s.idx], s), nil
+			return NewNamingDialog(s.service, s.options[s.idx % len(s.options)], s), nil
 		}
 	}
 	return s, nil
@@ -75,7 +75,7 @@ func (s *profileSelector) View() string {
 	str := "Which profile would you like to capture?\n\n"
 	for i := 0; i < len(s.options); i++ {
 		cursor := " "
-		if s.idx == i {
+		if s.idx % len(s.options) == i {
 			cursor = ">"
 		}
 		str += fmt.Sprintf("%s %s\n", cursor, s.options[i].name)

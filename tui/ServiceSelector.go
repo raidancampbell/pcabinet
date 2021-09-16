@@ -40,15 +40,16 @@ func (s *ServiceSelector) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return s, tea.Quit
 		case "up", "k":
-			if s.idx > 0 {
+			if s.idx % len(s.Options) == 0 {
+				s.idx = len(s.Options) - 1
+			} else {
 				s.idx--
 			}
 		case "down", "j":
-			if s.idx < len(s.Options)-1 {
-				s.idx++
-			}
+			s.idx++
 		case "enter", " ", "right":
-			return NewProfileSelector(s.Options[s.idx], s), nil
+
+			return NewProfileSelector(s.Options[s.idx % len(s.Options)], s), nil
 		}
 	}
 	return s, nil
@@ -58,7 +59,7 @@ func (s *ServiceSelector) View() string {
 	str := "Which server would you like to profile?\n\n"
 	for i := 0; i < len(s.Options); i++ {
 		cursor := " "
-		if s.idx == i {
+		if s.idx % len(s.Options) == i {
 			cursor = ">"
 		}
 		str += fmt.Sprintf("%s [%s] %s\n", cursor, s.Options[i].Name, s.Options[i].Endpoint)
