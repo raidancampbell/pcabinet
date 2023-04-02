@@ -12,6 +12,7 @@ import (
 	"net/http"
 	url2 "net/url"
 	"os"
+	"os/exec"
 	"path"
 	"strconv"
 	"strings"
@@ -129,6 +130,19 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 		}
 		complete <- err
 		return
+	}
+
+	if service.Kube != nil {
+		// kubectl port-forward services/service_name u.Port()
+		serviceName := strings.TrimPrefix(service.Kube.Service, "services/")
+		serviceName = strings.TrimPrefix(serviceName, "service/")
+		cmd := exec.Command("kubectl", fmt.Sprintf("--namespace=%s", service.Kube.Namespace), "port-forward", fmt.Sprintf("service/%s", service.Kube.Service), fmt.Sprintf("%d:%d", u.Port(), u.Port()))
+		if err := cmd.Start(); err != nil {
+			logrus.WithError(err).WithField("cmd", cmd.String())
+			complete <- err
+			return
+		}
+		defer cmd.Process.Signal(os.Interrupt)
 	}
 
 	// add the profile suffix to the URL, e.g. append `/trace` if the user wanted to capture a trace

@@ -10,13 +10,17 @@ import "github.com/spf13/viper"
 const configFilename = "pcabinet_config.yml"
 
 type Conf struct {
-	Services []Service
+	Services      []Service
 	OutputBasedir string `mapstructure:"output_basedir"`
-	TestCPU bool
+	TestCPU       bool
 }
 type Service struct {
 	Name     string
 	Endpoint string
+	Kube     *struct {
+		Namespace string
+		Service   string
+	}
 }
 
 var C Conf
