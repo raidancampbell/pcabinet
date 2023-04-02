@@ -136,7 +136,14 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 		// kubectl port-forward services/service_name u.Port()
 		serviceName := strings.TrimPrefix(service.Kube.Service, "services/")
 		serviceName = strings.TrimPrefix(serviceName, "service/")
-		cmd := exec.Command("kubectl", fmt.Sprintf("--namespace=%s", service.Kube.Namespace), "port-forward", fmt.Sprintf("service/%s", service.Kube.Service), fmt.Sprintf("%d:%d", u.Port(), u.Port()))
+		cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("service/%s", service.Kube.Service), fmt.Sprintf("%s:%s", u.Port(), u.Port()))
+		if service.Kube.Namespace != "" {
+			cmd.Args = append(cmd.Args, fmt.Sprintf("--namespace=%s", service.Kube.Namespace))
+		}
+		if service.Kube.Context != "" {
+			cmd.Args = append(cmd.Args, fmt.Sprintf("--context=%s", service.Kube.Namespace))
+		}
+
 		if err := cmd.Start(); err != nil {
 			logrus.WithError(err).WithField("cmd", cmd.String())
 			complete <- err

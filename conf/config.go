@@ -20,6 +20,7 @@ type Service struct {
 	Kube     *struct {
 		Namespace string
 		Service   string
+		Context   string
 	}
 }
 
