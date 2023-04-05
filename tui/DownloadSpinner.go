@@ -135,7 +135,6 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 	}
 
 	if service.Kube != nil {
-		// kubectl port-forward services/service_name u.Port()
 		serviceName := strings.TrimPrefix(service.Kube.Service, "services/")
 		serviceName = strings.TrimPrefix(serviceName, "service/")
 		cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("service/%s", serviceName), fmt.Sprintf("%s:%s", u.Port(), u.Port()))
@@ -157,14 +156,14 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%s", u.Port()), nil)
 		for ctx.Err() == nil {
-			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+			ctx, cancel := context.WithTimeout(ctx, 250*time.Millisecond)
 			req.WithContext(ctx)
 			res, err := http.DefaultClient.Do(req)
 			cancel()
 			if err == nil && res.StatusCode == 200 {
 				break
 			}
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 		if ctx.Err() != nil {
 			logrus.WithError(ctx.Err()).WithField("cmd", cmd.String()).Error("failed to start port-forward")
