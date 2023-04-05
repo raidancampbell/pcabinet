@@ -1,13 +1,9 @@
 package tui
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/raidancampbell/pcabinet/conf"
-	"github.com/raidancampbell/pcabinet/internal"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	url2 "net/url"
@@ -17,6 +13,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/raidancampbell/pcabinet/conf"
+	"github.com/raidancampbell/pcabinet/internal"
+	"github.com/sirupsen/logrus"
 )
 
 var _ tea.Model = &downloadSpinner{}
@@ -136,17 +138,37 @@ func doDownload(service conf.Service, profiling profilingOption, description str
 		// kubectl port-forward services/service_name u.Port()
 		serviceName := strings.TrimPrefix(service.Kube.Service, "services/")
 		serviceName = strings.TrimPrefix(serviceName, "service/")
-		cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("service/%s", service.Kube.Service), fmt.Sprintf("%s:%s", u.Port(), u.Port()))
+		cmd := exec.Command("kubectl", "port-forward", fmt.Sprintf("service/%s", serviceName), fmt.Sprintf("%s:%s", u.Port(), u.Port()))
 		if service.Kube.Namespace != "" {
 			cmd.Args = append(cmd.Args, fmt.Sprintf("--namespace=%s", service.Kube.Namespace))
 		}
 		if service.Kube.Context != "" {
-			cmd.Args = append(cmd.Args, fmt.Sprintf("--context=%s", service.Kube.Namespace))
+			cmd.Args = append(cmd.Args, fmt.Sprintf("--context=%s", service.Kube.Context))
 		}
 
 		if err := cmd.Start(); err != nil {
 			logrus.WithError(err).WithField("cmd", cmd.String())
 			complete <- err
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%s", u.Port()), nil)
+		for ctx.Err() == nil {
+			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			cancel()
+			if err == nil && res.StatusCode == 200 {
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if ctx.Err() != nil {
+			logrus.WithError(ctx.Err()).WithField("cmd", cmd.String()).Error("failed to start port-forward")
+			complete <- ctx.Err()
 			return
 		}
 		defer cmd.Process.Signal(os.Interrupt)
